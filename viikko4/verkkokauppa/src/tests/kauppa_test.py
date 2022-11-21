@@ -24,7 +24,7 @@ class TestKauppa(unittest.TestCase):
                 return 40
 
             if tuote_id == 3:
-                return 0
+                return 1
 
         # tehdään toteutus hae_tuote-metodille
         def varasto_hae_tuote(tuote_id):
@@ -79,5 +79,42 @@ class TestKauppa(unittest.TestCase):
         self.kauppa.lisaa_koriin(2)
         self.kauppa.lisaa_koriin(3)
         self.kauppa.tilimaksu("pekka", "12345")
+        self.kauppa.lisaa_koriin(3)
 
+        self.pankki_mock.tilisiirto.assert_called_with('pekka', 42, '12345', '33333-44455', 9)
+
+    def test_tuote_on_loppu_ja_ostos(self):
+        self.kauppa.aloita_asiointi()
+        self.kauppa.lisaa_koriin(3)
+        self.kauppa.tilimaksu("pekka", "12345")
+        self.kauppa.aloita_asiointi()
+        self.kauppa.lisaa_koriin(3)
+
+        self.pankki_mock.lisaa_koriin.assert_not_called()
+
+    def test_aloita_asiointi_nollaa_hinnan(self):
+        self.kauppa.aloita_asiointi()
+        self.kauppa.lisaa_koriin(2)
+        self.kauppa.lisaa_koriin(3)
+        self.kauppa.lisaa_koriin(2)
+        self.kauppa.lisaa_koriin(1)
+        self.kauppa.tilimaksu("pekka", "12345")
+        
+        self.kauppa.aloita_asiointi()
+        self.kauppa.lisaa_koriin(2)
+        self.kauppa.tilimaksu("pekka", "12345")
         self.pankki_mock.tilisiirto.assert_called_with('pekka', 42, '12345', '33333-44455', 2)
+
+    
+    def test_uusi_viitenumero_jokaiselle_maksutapahtumalle(self):
+        self.kauppa.aloita_asiointi()
+        self.kauppa.lisaa_koriin(2)
+        self.kauppa.tilimaksu("pekka","12345")
+
+        self.assertEqual(self.viitegeneraattori_mock.uusi.call_count, 1)
+
+        self.kauppa.aloita_asiointi()
+        self.kauppa.lisaa_koriin(1)
+        self.kauppa.tilimaksu("pekka","12345")
+
+        self.assertEqual(self.viitegeneraattori_mock.uusi.call_count, 2)
