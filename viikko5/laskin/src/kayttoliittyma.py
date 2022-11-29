@@ -1,6 +1,44 @@
 from enum import Enum
 from tkinter import ttk, constants, StringVar
 
+last = [0]
+
+class Kumoa:
+    def __init__(self, io, lue):
+        self.io = io
+        self.lue = lue
+
+    def suorita(self):
+        self.io.aseta_arvo(last.pop(-1))
+
+
+class Summa:
+    def __init__(self, io, lue):
+        self.io = io
+        self.lue = lue
+
+    def suorita(self):
+        last.append(self.io.tulos)
+        self.io.plus(self.lue())
+        print(last)
+
+class Erotus:
+    def __init__(self, io, lue):
+        self.io = io
+        self.lue = lue
+
+    def suorita(self):
+        last.append(self.io.tulos)
+        self.io.miinus(self.lue())
+        print(last)
+
+class Nollaus:
+    def __init__(self, io, lue):
+        self.io = io
+        self.lue = lue
+
+    def suorita(self):
+        self.io.nollaa()
 
 class Komento(Enum):
     SUMMA = 1
@@ -8,11 +46,21 @@ class Komento(Enum):
     NOLLAUS = 3
     KUMOA = 4
 
-
 class Kayttoliittyma:
     def __init__(self, sovellus, root):
         self._sovellus = sovellus
         self._root = root
+
+        self._komennot = {
+            Komento.SUMMA: Summa(sovellus, self._lue_syote),
+            Komento.EROTUS: Erotus(sovellus, self._lue_syote),
+            Komento.NOLLAUS: Nollaus(sovellus, self._lue_syote),
+            Komento.KUMOA: Kumoa(sovellus, self._lue_syote)
+        }
+
+    def _lue_syote(self):
+        return self._syote_kentta.get()
+
 
     def kaynnista(self):
         self._tulos_var = StringVar()
@@ -55,25 +103,11 @@ class Kayttoliittyma:
         self._kumoa_painike.grid(row=2, column=3)
 
     def _suorita_komento(self, komento):
-        arvo = 0
-
-        try:
-            arvo = int(self._syote_kentta.get())
-        except Exception:
-            pass
-
-        if komento == Komento.SUMMA:
-            self._sovellus.plus(arvo)
-        elif komento == Komento.EROTUS:
-            self._sovellus.miinus(arvo)
-        elif komento == Komento.NOLLAUS:
-            self._sovellus.nollaa()
-        elif komento == Komento.KUMOA:
-            pass
-
+        komento_olio = self._komennot[komento]
+        komento_olio.suorita()
         self._kumoa_painike["state"] = constants.NORMAL
 
-        if self._sovellus.tulos == 0:
+        if self._sovellus.tulos == 0 or len(last)== 0:
             self._nollaus_painike["state"] = constants.DISABLED
         else:
             self._nollaus_painike["state"] = constants.NORMAL
