@@ -1,5 +1,3 @@
-import inspect
-
 class And:
     def __init__(self, *matchers):
         self._matchers = matchers
@@ -11,13 +9,41 @@ class And:
 
         return True
 
+class Or:
+    def __init__(self, *matchers):
+        self._matchers = matchers
+        
+    def test(self, player):
+        for matcher in self._matchers:
+            if matcher.test(player):
+                return True
+
+        return False
+
+class Not:
+    def __init__(self, *matchers):
+        self._matchers = matchers
+
+    def test(self, player):
+        for matcher in self._matchers:
+            if matcher.test(player):
+                return False
+
+        return True
+
+class All:
+    def test(self, player):
+        return True
+
+        
+
+
 class PlaysIn:
     def __init__(self, team):
         self._team = team
 
     def test(self, player):
         return player.team == self._team
-
 
 class HasAtLeast:
     def __init__(self, value, attr):
@@ -39,22 +65,3 @@ class HasFewerThan:
 
         return player_value < self._value
 
-class Not:
-    def __init__(self, func):
-        self.func = func
-        self.i = inspect.getmembers(self.func, lambda a:not(inspect.isroutine(a)))
-        self._value = self.i[2][1]['_value']
-        self._attr = self.i[2][1]['_attr']        
-
-    def test(self,player):
-        player_value = getattr(player, self._attr)
-        
-        if "HasAtLeast" in str(self.func):
-            return player_value < self._value
-
-        elif "HasFewerThan" in str(self.func):
-            return player_value >= self._value
-
-class All:
-    def test(self, player):
-        return True
